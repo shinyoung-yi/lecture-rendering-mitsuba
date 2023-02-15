@@ -15,6 +15,16 @@ scene_labels = ["cbox", "cbox_point"]
 gt_spp = 40960
 # gt_file = "cbox_40960spp.npy"
 
+def scale_gamma(img: ArrayLike, gm: float=2.2) -> ArrayLike:
+    # Clip to avoid warning message from `plt.imshow`
+    img = np.clip(img, 0.0, 1.0)
+    return img ** (1/gm)
+
+def scale_vec2unit(vec: ArrayLike) -> ArrayLike:
+    # Clip to avoid warning message from `plt.imshow`
+    unit_range = vec / 2 + 0.5
+    return np.clip(unit_range, 0.0, 1.0)
+
 def imshow_compare(img, ref, title_img="My answer", title_ref="GT",
                    opt_img=dict(), opt_ref=dict(), opt_diff=dict()):
     plt.subplot(131)
@@ -32,7 +42,7 @@ def imshow_compare(img, ref, title_img="My answer", title_ref="GT",
 
 def text_at(scene: mi.Scene, point: Union[mi.Point3f, ArrayLike],
             text: str, ha: str="center", va: str="top"):
-    pixpos = world2img(scene, point)
+    pixpos = np.squeeze(world2img(scene, point).numpy())
     xoffset = 0
     yoffset = 10 if va == "top" else -10
     kargs = dict(size=10, ha=ha, va=va, bbox=dict(ec = (0.,0.,0.,0.),
@@ -190,12 +200,29 @@ def primary_hits(scene: mi.Scene) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # return pt.reshape(h, w, 3), mask.reshape(h, w), prem_id.reshape(h, w), shape_id.reshape(h, w)
     return pt.reshape(h, w, 3), mask.reshape(h, w), shape_id.reshape(h, w)
 
-def scale_gamma(img: ArrayLike, gm: float=2.2) -> ArrayLike:
-    # Clip to avoid warning message from `plt.imshow`
-    img = np.clip(img, 0.0, 1.0)
-    return img ** (1/gm)
-
-def scale_vec2unit(vec: ArrayLike) -> ArrayLike:
-    # Clip to avoid warning message from `plt.imshow`
-    unit_range = vec / 2 + 0.5
-    return np.clip(unit_range, 0.0, 1.0)
+def scale_scene_dict(scene_dict: dict, factor: float) -> dict:
+    T = mi.ScalarTransform4f
+    res_dict = {}
+    for k, v in scene_dict.items():
+        if type(v) == dict:
+            v_res = v.copy()
+        else:
+            v_res = v
+        if k == 'sensor':
+            tf = v['to_world']
+            npmat = tf.matrix.numpy()
+            # print(type(npmat))
+            # print(npmat)
+            # print(k)
+            # print(k*npmat[:3, 3])
+            npmat[:3, 3] *= factor
+            v_res['to_world'] = mi.ScalarTransform4f(npmat)
+        else:
+            if 'to_world' in v:
+                tf = v['to_world']
+                v_res['to_world'] = T.scale([factor, factor, factor]) @ tf
+            for mult_able in ['position', 'center', 'radius']:
+                if mult_able in v:
+                    v_res[mult_able] = v[mult_able] * factor
+        res_dict[k] = v_res
+    return res_dict
