@@ -1,7 +1,7 @@
 from __future__ import annotations
 from os.path import join as pathjoin
 from time import time
-from typing import Tuple, Union
+from typing import Tuple, Union, Sequence, Optional
 import numpy as np
 from numpy.typing import ArrayLike
 import matplotlib.pyplot as plt
@@ -15,6 +15,36 @@ scene_labels = ["cbox", "cbox_point"]
 gt_spp = 40960
 # gt_file = "cbox_40960spp.npy"
 
+def normalize(vec:  ArrayLike,
+              axis: Optional[int] = -1
+             ) ->   ArrayLike:
+    return vec / np.linalg.norm(vec, axis=axis, keepdims=True)
+
+def sph2vec(theta: ArrayLike, # [*]
+            phi:   ArrayLike, # [*]
+            axis:  Optional[int] = -1
+           ) ->    ArrayLike: # [*, 3] if `axis == -1`
+    sint = np.sin(theta)
+    x = sint*np.cos(phi)
+    y = sint*np.sin(phi)
+    z = np.cos(theta)
+    return np.stack([x, y, z], axis=axis)
+
+def vec2sph(vec:  ArrayLike, # *x3 (default), not assumed normalized
+            axis: int = -1,
+           ) ->   Tuple[ArrayLike, ArrayLike]: # (theta[*], phi[*]) in radian
+    vec = np.asarray(vec)
+    if vec.shape[axis] != 3:
+        raise ValueError(f"The size along given axis({axis}) should be equal to 3, but curretly shape:{vec.shape}.")
+    vec = normalize(vec, axis=axis)
+    vec = np.swapaxes(vec, axis, -1)
+    X = vec[...,0]
+    Y = vec[...,1]
+    Z = vec[...,2]
+    theta = np.arccos(Z)
+    phi = np.arctan2(Y, X)
+    return theta, phi
+
 def scale_gamma(img: ArrayLike, gm: float=2.2) -> ArrayLike:
     # Clip to avoid warning message from `plt.imshow`
     img = np.clip(img, 0.0, 1.0)
@@ -27,18 +57,67 @@ def scale_vec2unit(vec: ArrayLike) -> ArrayLike:
 
 def imshow_compare(img, ref, title_img="My answer", title_ref="GT",
                    opt_img=dict(), opt_ref=dict(), opt_diff=dict()):
+    img = np.asarray(img)
     plt.subplot(131)
     plt.imshow(scale_gamma(img), **opt_img)
     plt.title(title_img)
     
+    if type(ref) == str:
+        ref = mi.Bitmap(ref)
+    ref = np.asarray(ref)
     plt.subplot(132)
     plt.imshow(scale_gamma(ref), **opt_ref)
     plt.title(title_ref)
     
     plt.subplot(133)
-    im = plt.imshow((img - ref).sum(-1), cmap='seismic', **opt_diff)
+    diff = (img - ref).sum(-1)
+    vabs = max(np.abs(diff.max()), np.abs(diff.min()))
+    im = plt.imshow(diff, cmap='seismic', vmin=-vabs, vmax=vabs, **opt_diff)
+    
     plt.colorbar(im, fraction=0.046, pad=0.04)
     plt.title("Diff.")
+    plt.tight_layout()
+
+def imshow_compare_many(img_list: Sequence[ArrayLike],
+                        ref: Union[ArrayLike, str],
+                        title_img_list: Optional[Sequence[str]] = None,
+                        title_ref: Optional[str] = "GT",
+                        vabs: Optional[float] = None,
+                        opt_img: dict = dict(),
+                        opt_ref: dict = dict(),
+                        opt_diff: dict = dict()):
+    n_img = len(img_list)
+    if type(ref) == str:
+        ref = mi.Bitmap(ref)
+    ref = np.asarray(ref)
+
+    for i, img in enumerate(img_list):
+        img = np.asarray(img)
+        plt.subplot(2, n_img+1, i+1)
+        plt.imshow(scale_gamma(img), **opt_img)
+        
+        if title_img_list is None:
+            title_img = f"My answer {i+1}"
+        else:
+            title_img = title_img_list[i]
+        plt.title(title_img)
+
+        plt.subplot(2, n_img+1, i+n_img+2)
+        diff = (img - ref).sum(-1)
+        if vabs is None:
+            vabs_curr = max(np.abs(diff.max()), np.abs(diff.min()))
+        else:
+            vabs_curr = vabs
+        im = plt.imshow(diff, cmap='seismic', vmin=-vabs_curr, vmax=vabs_curr, **opt_diff)
+
+        plt.colorbar(im, fraction=0.046, pad=0.04)
+        plt.title("Diff.")
+    
+    plt.subplot(2, n_img+1, n_img+1)
+    plt.imshow(scale_gamma(ref), **opt_ref)
+    plt.title(title_ref)
+    plt.tight_layout()
+
 
 def text_at(scene: mi.Scene, point: Union[mi.Point3f, ArrayLike],
             text: str, ha: str="center", va: str="top"):

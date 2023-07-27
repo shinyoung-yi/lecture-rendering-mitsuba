@@ -1,2 +1,10 @@
 *_sol.ipynb
+*_dummy.ipynb
+slides/*.pptx
 __pycache__/
+
+media/
+logo/
+manim_test.ipynb
+
+temp.py

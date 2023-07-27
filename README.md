@@ -12,10 +12,11 @@ Python modules
 * NumPy
 * Matplotlib
 * mitsuba 3
-* Dr. Jit
+  * Dr. Jit
+
 
 You can install all the dependencies by simply typing in your terminal:
 
-`pip install numpy matplotlib mitsuba`
+`pip install numpy matplotlib ipykernel ipywidgets PyQt5 mitsuba`
 
 Note that `pip install mitsuba` automatically installs Dr. Jit.
