@@ -196,6 +196,8 @@ def world2img(scene: mi.Scene, point: Union[mi.Point3f, ArrayLike]) -> mi.Point2
     '''
     Assume height and width are equal.
     '''
+    if not isinstance(scene, mi.Scene):
+        raise TypeError(f"Wrong type for `scene`: {type(scene)}")
     params = mi.traverse(scene)
     sensor_tf = params['sensor.to_world']
     size = params['sensor.film.size']
@@ -279,6 +281,44 @@ def primary_hits(scene: mi.Scene) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # return pt.reshape(h, w, 3), mask.reshape(h, w), prem_id.reshape(h, w), shape_id.reshape(h, w)
     return pt.reshape(h, w, 3), mask.reshape(h, w), shape_id.reshape(h, w)
 
+##################################################
+### Mitsuba scene dictionary
+##################################################
+
+# "Mi"tsuba objects in "dict"ionary
+def midict_area(rgb: ArrayLike # [3]
+               ) ->  dict:
+    return {'type': 'area',
+            'radiance': {'type': 'rgb',
+                         'value': rgb}}
+
+def midict_diffuse(reflectance: ArrayLike) -> dict:
+    return {'type': 'diffuse',
+            'reflectance': {'type': 'rgb',
+                            'value': reflectance}}
+
+def midict_sphere(center:  ArrayLike,
+                  radius:  float,
+                  bsdf:    Union[dict, str],
+                  emitter: Union[dict, str, None] = None
+                 ) ->      dict:
+    res = {'type': 'sphere',
+           'center': center,
+           'radius': radius}
+    if type(bsdf) == str:
+        res['bsdf'] = {'type': 'ref', 'id': bsdf}
+    elif type(bsdf) == dict:
+        res['bsdf'] = bsdf
+    else:
+        raise TypeError(f"Unsupported type ({type(bsdf)}) for `bsdf`.")
+    if type(emitter) == str:
+        res['emitter'] = {'type': 'ref', 'id': emitter}
+    elif type(emitter) == dict:
+        res['emitter'] = emitter
+    elif emitter is not None:
+        raise TypeError(f"Unsupported type ({type(emitter)}) for `emitter`.")
+    return res
+
 def scale_scene_dict(scene_dict: dict, factor: float) -> dict:
     T = mi.ScalarTransform4f
     res_dict = {}
@@ -305,3 +345,67 @@ def scale_scene_dict(scene_dict: dict, factor: float) -> dict:
                     v_res[mult_able] = v[mult_able] * factor
         res_dict[k] = v_res
     return res_dict
+
+##################################################
+### matplotlib.pyplot
+##################################################
+
+def text_at(point: mi.Point3f, scene: mi.Scene, text: str, ha: str="center", va: str="top"):
+    pixpos = world2img(scene, point)
+    xoffset = 0
+    yoffset = 10 if va == "top" else -10
+    kargs = dict(size=10, ha=ha, va=va, bbox=dict(ec = (0.,0.,0.,0.),
+                                                  fc=(1.,1.,1., 0.3)))
+    plt.text(pixpos[0] + xoffset, pixpos[1] + yoffset,
+             text, **kargs)
+
+def show_ray(scene_dict: dict, ray: mi.Ray3f, si: mi.SurfaceInteraction3f):
+    scene_dict['zero_bsdf'] = midict_diffuse([0, 0, 0])
+    
+    scene_dict['ray'] = {
+        'type': 'cylinder',
+        'p0': ray.o,
+        'p1': si.p,
+        'radius': 0.01,
+        'bsdf': {'type': 'ref', 'id': 'zero_bsdf'},
+        'emitter': midict_area([1, 0, 0])}
+    scene_dict['origin'] = midict_sphere(ray.o, 0.03, 'zero_bsdf', midict_area([1, 1, 1]))
+    scene_dict['intersection'] = midict_sphere(si.p, 0.03, 'zero_bsdf', midict_area([2, 0.4, 0.4]))
+
+    scene_visualize = mi.load_dict(scene_dict)
+    img = mi.render(scene_visualize, spp=100)
+    plt.imshow(img**(1/2.2))
+    
+    with np.printoptions(precision=4):
+        text_at(ray.o, scene_visualize, f"ray.o = mi.Point3f({ray.o.numpy()})")
+        text_at(si.p, scene_visualize, f"si.p = mi.Point3f({si.p.numpy()})", ha="right", va="bottom")
+    
+def show_ds(si: mi.SurfaceInteraction3f, ds_list: Sequence[mi.DirectionSample3f]):
+    scene_dict = mi.cornell_box()
+    scene_dict['integrator']['max_depth'] = 5
+    scene_dict['zero_bsdf'] = midict_diffuse([0, 0, 0])
+
+    # For visibility of `ds` on the light source
+    scene_dict['light']['emitter']['radiance']['value'] = [0.2, 0.2, 0.2]
+    scene_dict['point'] = {'type': 'point',
+                           'position': [0, 0.2, 0.3],
+                           'intensity': {'type': 'rgb', 'value': [0.3,0.3,0.3]}} 
+    
+    scene_dict['si'] = midict_sphere(si.p, 0.03, 'zero_bsdf', midict_area([0.4, 0.4, 2]))
+    for i, ds in enumerate(ds_list):
+        scene_dict[f'ds{i}'] = midict_sphere(ds.p, 0.005, 'zero_bsdf', midict_area([2, 0.4, 0.4]))
+    scene_visualize = mi.load_dict(scene_dict)
+    spp = 512
+    img = mi.render(scene_visualize, spp=spp)
+    plt.subplot(1, 2, 1)
+    plt.imshow(img**(1/2.2))
+
+    text_at(si.p, scene_visualize, f"si.p = mi.Point3f({si.p.numpy().round(2)})", ha='right', va='top')
+    # ds0p = ds_list[0].p
+    # text_at(ds0p, scene_visualize, f"ds_list[0].p = mi.Point3f({ds0p})", ha="center", va="top")
+
+    scene_dict['sensor']['to_world'] = mi.ScalarTransform4f.look_at([0, 0, 0], [0, 1, 0], [0, 0, 1])
+    scene_visualize = mi.load_dict(scene_dict)
+    img = mi.render(scene_visualize, spp=spp)
+    plt.subplot(1, 2, 2)
+    plt.imshow(img**(1/2.2))
