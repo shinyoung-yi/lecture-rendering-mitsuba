@@ -55,7 +55,7 @@ def scale_vec2unit(vec: ArrayLike) -> ArrayLike:
     unit_range = vec / 2 + 0.5
     return np.clip(unit_range, 0.0, 1.0)
 
-def imshow_compare(img, ref, title_img="My answer", title_ref="GT",
+def imshow_compare(img, ref, title_img="My answer", title_ref="GT", vabs = None,
                    opt_img=dict(), opt_ref=dict(), opt_diff=dict()):
     img = np.asarray(img)
     plt.subplot(131)
@@ -71,8 +71,11 @@ def imshow_compare(img, ref, title_img="My answer", title_ref="GT",
     
     plt.subplot(133)
     diff = (img - ref).sum(-1)
-    vabs = max(np.abs(diff.max()), np.abs(diff.min()))
-    im = plt.imshow(diff, cmap='seismic', vmin=-vabs, vmax=vabs, **opt_diff)
+    if vabs is None:
+        vabs_curr = max(np.abs(diff.max()), np.abs(diff.min()))
+    else:
+        vabs_curr = vabs
+    im = plt.imshow(diff, cmap='seismic', vmin=-vabs_curr, vmax=vabs_curr, **opt_diff)
     
     plt.colorbar(im, fraction=0.046, pad=0.04)
     plt.title("Diff.")
