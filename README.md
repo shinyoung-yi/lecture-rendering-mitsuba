@@ -26,8 +26,6 @@ In order to minimize the barrier to learning rendering, this material have some 
 
 ## Contents
 
-## Learning sequence
-
 You can understand ray tracing algorithms very quickly by studying the following sections.
 
 1. Radiometry: `./slides/01. radiometry and light transport.pdf`, `./hw1_radiometry.ipynb`
