@@ -5,6 +5,8 @@ Please do not upload your solution to online publicly.
 
 
 
+본 자료는 완벽하지 않거나 작업 갱신이 느릴 수 있다. [Discussion](https://github.com/shinyoung-yi/lecture-rendering-mitsuba/discussions) 페이지를 활용한 모든 **질문, 오류 정정, 컨텐츠 제안, 업데이트에 대한 종용** 등은 언제나 환영된다.
+
 ## 다른 렌더링 학습 자료와의 차이점
 
 물리 기반 렌더링, 대표적으로 광선 추적(ray tracing)은 컴퓨터 그래픽스 및 비전에서 중요한 기반 기술이다. 하지만 복잡한 C++ 코딩, 이론적 난이도 등으로 인해 진입 장벽이 높은 것이 사실이다. 본 리포지토리에 담긴 자료는 렌더링 교육의 진입 장벽을 낮추는 것을 가장 큰 목표로 하고 있으며, 제공된 강의 자료(`./slides/*.pdf`), 튜토리얼(`./tutotial*.ipynb`), 과제(`./hw*.ipynb`)를 잘 따라올 경우 **하루**의 시간 안에 광선 추적 분야의 베이스라인 알고리즘인 경로 추적(path tracing)을 구현할 수 있을 것이라 생각한다.

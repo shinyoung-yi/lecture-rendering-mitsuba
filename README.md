@@ -5,6 +5,8 @@ Please do not upload your solution to online publicly.
 
 
 
+The material may not be complete and may be slow to update. All **questions, error corrections, content suggestions, and reminders to update** are always welcome using the [Discussion](https://github.com/shinyoung-yi/lecture-rendering-mitsuba/discussions) section.
+
 ## Difference from other rendering materials
 
 Physically based rendering, typically ray tracing, is an important foundation of computer graphics and vision. However, the barriers to learning it has been considered to be high due to complex C++ coding and theoretical difficulty. The materials in this repository are aimed at lowering the barrier to learning rendering, and we believe that if you follow the provided lecture materials (`./slides/*.pdf`), tutorials (`./tutotial*.ipynb`), and homework (`./hw*.ipynb`), you should be able to implement path tracing, the baseline algorithm for ray tracing, in less than **a day**.
