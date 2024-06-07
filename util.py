@@ -1,7 +1,7 @@
 from __future__ import annotations
 from os.path import join as pathjoin
 from time import time
-from typing import Tuple, Union, Sequence, Optional
+from typing import Tuple, Union, Sequence, Optional, Callable
 import numpy as np
 from numpy.typing import ArrayLike
 import matplotlib.pyplot as plt
@@ -73,8 +73,12 @@ def imshow_compare(img, ref, title_img="My answer", title_ref="GT", vabs = None,
     diff = (img - ref).sum(-1)
     if vabs is None:
         vabs_curr = max(np.abs(diff.max()), np.abs(diff.min()))
+        # opt_diff_curr = opt_diff
     else:
         vabs_curr = vabs
+        # opt_diff_curr = opt_diff.copy()
+        # opt_diff_curr.pop('vmin')
+        # opt_diff_curr.pop('vmax')
     im = plt.imshow(diff, cmap='seismic', vmin=-vabs_curr, vmax=vabs_curr, **opt_diff)
     
     plt.colorbar(im, fraction=0.046, pad=0.04)
@@ -121,16 +125,6 @@ def imshow_compare_many(img_list: Sequence[ArrayLike],
     plt.title(title_ref)
     plt.tight_layout()
 
-
-def text_at(scene: mi.Scene, point: Union[mi.Point3f, ArrayLike],
-            text: str, ha: str="center", va: str="top"):
-    pixpos = np.squeeze(world2img(scene, point).numpy())
-    xoffset = 0
-    yoffset = 10 if va == "top" else -10
-    kargs = dict(size=10, ha=ha, va=va, bbox=dict(ec = (0.,0.,0.,0.),
-                                                  fc=(1.,1.,1., 0.3)))
-    plt.text(pixpos[0] + xoffset, pixpos[1] + yoffset,
-             text, **kargs)
     
 def test_integrator_short(integrator_name):
     # Options
@@ -165,7 +159,7 @@ def test_integrator_short(integrator_name):
     
     plt.show()
     
-def test_sequence(func_seq: callable[int, mi.Scene], scene_limit: mi.scene,
+def test_sequence(func_seq: Callable[[int], mi.Scene], scene_limit: mi.Scene,
                   title_seq: str, title_limit: str,
                   opt_seq=dict(), opt_limit=dict(), opt_diff=dict()):
     '''
@@ -353,8 +347,9 @@ def scale_scene_dict(scene_dict: dict, factor: float) -> dict:
 ### matplotlib.pyplot
 ##################################################
 
-def text_at(point: mi.Point3f, scene: mi.Scene, text: str, ha: str="center", va: str="top"):
-    pixpos = world2img(scene, point)
+def text_at(scene: mi.Scene, point: Union[mi.Point3f, ArrayLike],
+            text: str, ha: str="center", va: str="top"):
+    pixpos = np.squeeze(world2img(scene, point).numpy())
     xoffset = 0
     yoffset = 10 if va == "top" else -10
     kargs = dict(size=10, ha=ha, va=va, bbox=dict(ec = (0.,0.,0.,0.),
@@ -380,8 +375,8 @@ def show_ray(scene_dict: dict, ray: mi.Ray3f, si: mi.SurfaceInteraction3f):
     plt.imshow(img**(1/2.2))
     
     with np.printoptions(precision=4):
-        text_at(ray.o, scene_visualize, f"ray.o = mi.Point3f({ray.o.numpy()})")
-        text_at(si.p, scene_visualize, f"si.p = mi.Point3f({si.p.numpy()})", ha="right", va="bottom")
+        text_at(scene_visualize, ray.o, f"ray.o = mi.Point3f({ray.o.numpy()})")
+        text_at(scene_visualize, si.p, f"si.p = mi.Point3f({si.p.numpy()})", ha="right", va="bottom")
     
 def show_ds(si: mi.SurfaceInteraction3f, ds_list: Sequence[mi.DirectionSample3f]):
     scene_dict = mi.cornell_box()
@@ -403,7 +398,7 @@ def show_ds(si: mi.SurfaceInteraction3f, ds_list: Sequence[mi.DirectionSample3f]
     plt.subplot(1, 2, 1)
     plt.imshow(img**(1/2.2))
 
-    text_at(si.p, scene_visualize, f"si.p = mi.Point3f({si.p.numpy().round(2)})", ha='right', va='top')
+    text_at(scene_visualize, si.p, f"si.p = mi.Point3f({si.p.numpy().round(2)})", ha='right', va='top')
     # ds0p = ds_list[0].p
     # text_at(ds0p, scene_visualize, f"ds_list[0].p = mi.Point3f({ds0p})", ha="center", va="top")
 
