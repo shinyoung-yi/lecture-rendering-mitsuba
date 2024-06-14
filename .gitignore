@@ -12,3 +12,6 @@ temp.py
 .vscode/
 
 _memo/
+scene/blender-material
+figsrc/material-appearance
+figsrc/radiance-constancy
