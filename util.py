@@ -55,21 +55,28 @@ def scale_vec2unit(vec: ArrayLike) -> ArrayLike:
     unit_range = vec / 2 + 0.5
     return np.clip(unit_range, 0.0, 1.0)
 
-def imshow_compare(img, ref, title_img="My answer", title_ref="GT", vabs = None,
-                   opt_img=dict(), opt_ref=dict(), opt_diff=dict()):
+def imshow_compare(img:       ArrayLike,
+                   ref:       ArrayLike,
+                   title_img: Optional[str]   = "My answer",
+                   title_ref: Optional[str]   = "GT",
+                   figsize:   Optional[Tuple[float, float]] = None,
+                   suptitle:  Optional[str]   = None,
+                   vabs:      Optional[float] = None,
+                   gm:        Optional[float] = 2.2,
+                   opt_img:   Optional[dict]  = dict(),
+                   opt_ref:   Optional[dict]  = dict(),
+                   opt_diff:  Optional[dict]  = dict()):
     img = np.asarray(img)
-    plt.subplot(131)
-    plt.imshow(scale_gamma(img), **opt_img)
-    plt.title(title_img)
+    fig, axes = plt.subplots(1, 3, figsize=figsize)
+    axes[0].imshow(scale_gamma(img, gm=gm), **opt_img)
+    axes[0].set_title(title_img)
     
     if type(ref) == str:
         ref = mi.Bitmap(ref)
     ref = np.asarray(ref)
-    plt.subplot(132)
-    plt.imshow(scale_gamma(ref), **opt_ref)
-    plt.title(title_ref)
+    axes[1].imshow(scale_gamma(ref, gm=gm), **opt_ref)
+    axes[1].set_title(title_ref)
     
-    plt.subplot(133)
     diff = (img - ref).sum(-1)
     if vabs is None:
         vabs_curr = max(np.abs(diff.max()), np.abs(diff.min()))
@@ -79,10 +86,12 @@ def imshow_compare(img, ref, title_img="My answer", title_ref="GT", vabs = None,
         # opt_diff_curr = opt_diff.copy()
         # opt_diff_curr.pop('vmin')
         # opt_diff_curr.pop('vmax')
-    im = plt.imshow(diff, cmap='seismic', vmin=-vabs_curr, vmax=vabs_curr, **opt_diff)
+    im = axes[2].imshow(diff, cmap='seismic', vmin=-vabs_curr, vmax=vabs_curr, **opt_diff)
     
     plt.colorbar(im, fraction=0.046, pad=0.04)
-    plt.title("Diff.")
+    axes[2].set_title("Diff.")
+    if suptitle is not None:
+        fig.suptitle(suptitle)
     plt.tight_layout()
 
 def imshow_compare_many(img_list: Sequence[ArrayLike],
@@ -226,7 +235,7 @@ def primary_rays(scene: mi.Scene) -> mi.Ray3f:
     # Compute the position on the image plane
     pos = mi.Vector2i()
     pos.y = idx // film_size[0]
-    pos.x = dr.fma(-film_size[0], pos.y, idx)
+    pos.x = dr.fma(mi.Int32(-film_size[0]), pos.y, idx)
 
     if film.sample_border():
         pos -= border_size
@@ -336,7 +345,7 @@ def scale_scene_dict(scene_dict: dict, factor: float) -> dict:
         else:
             if 'to_world' in v:
                 tf = v['to_world']
-                v_res['to_world'] = T.scale([factor, factor, factor]) @ tf
+                v_res['to_world'] = T().scale([factor, factor, factor]) @ tf
             for mult_able in ['position', 'center', 'radius']:
                 if mult_able in v:
                     v_res[mult_able] = v[mult_able] * factor
@@ -402,7 +411,7 @@ def show_ds(si: mi.SurfaceInteraction3f, ds_list: Sequence[mi.DirectionSample3f]
     # ds0p = ds_list[0].p
     # text_at(ds0p, scene_visualize, f"ds_list[0].p = mi.Point3f({ds0p})", ha="center", va="top")
 
-    scene_dict['sensor']['to_world'] = mi.ScalarTransform4f.look_at([0, 0, 0], [0, 1, 0], [0, 0, 1])
+    scene_dict['sensor']['to_world'] = mi.ScalarTransform4f().look_at([0, 0, 0], [0, 1, 0], [0, 0, 1])
     scene_visualize = mi.load_dict(scene_dict)
     img = mi.render(scene_visualize, spp=spp)
     plt.subplot(1, 2, 2)
