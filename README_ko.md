@@ -57,7 +57,7 @@ Please do not upload your solution to online publicly.
 터미널에 다음 명령을 입력하여 한번에 설치할 수 있다.
 
 ```cmd
-pip install numpy==1.26 matplotlib ipykernel ipywidgets PyQt5 mitsuba=3.6.0
+pip install numpy==1.26 matplotlib ipykernel ipywidgets PyQt5 mitsuba==3.6.0
 ```
 
 처음에 나열된 의존성 중 Dr. Jit `pip install mitsuba`을 실행할 때 자동으로 설치된다.

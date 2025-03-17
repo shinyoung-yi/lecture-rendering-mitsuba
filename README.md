@@ -57,7 +57,7 @@ Python (tested on 3.11) modules
 You can install all the dependencies by simply typing in your terminal:
 
 ````cmd
-pip install numpy==1.26 matplotlib ipykernel ipywidgets PyQt5 mitsuba=3.6.0
+pip install numpy==1.26 matplotlib ipykernel ipywidgets PyQt5 mitsuba==3.6.0
 ````
 
 Note that `pip install mitsuba` automatically installs Dr. Jit
