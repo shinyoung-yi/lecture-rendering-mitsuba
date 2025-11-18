@@ -1,5 +1,7 @@
 *_sol.ipynb
 *_dummy.ipynb
+*_practice.ipynb
+*_practice.py
 slides/*.pptx
 __pycache__/
 
@@ -18,3 +20,4 @@ figsrc/radiance-constancy
 figsrc/blender/
 \[talk\]/2025postech/_old/
 \[talk\]/2025postech/*.pptx
+figsrc/*.pptx
